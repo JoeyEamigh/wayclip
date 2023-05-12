@@ -1,0 +1,13 @@
+[Unit]
+Description=wayclip: An opinionated Wayland clipboard manager
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=wayclip
+Restart=always
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,18 @@
+[general]
+maxHistory = 0 # maximum number of history entries to keep (set to 0 to disable)
+menu = 'bemenu' # only bemenu is supported at the moment
+
+[data]
+mime = 'text/plain' # preferred mime type to use when copying text (change at your own risk) ((utf8 is expensive??))
+dedupe = true # whether to deduplicate history entries (maybe expensive?)
+
+[encryption]
+encrypt = true # whether to encrypt the history file
+key = '' # encryption key (leave blank to use the default key)
+
+[bemenu]
+font = 'monospace 12' # format is '"font name" size'
+title = 'search >' # title of the bemenu window (essentially a prompt)
+lines = 15 # number of lines to show in the bemenu window
+grabFocus = true # whether to grab focus when the bemenu window is shown
+monitor = -1 # monitor to show the bemenu window on (-1 means the currently focused monitor)

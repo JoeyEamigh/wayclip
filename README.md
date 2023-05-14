@@ -43,8 +43,8 @@ wayclip install // installs systemd file
 ### Arch Linux AUR
 
 ```bash
-paru -S wayclip-git
-yay -S wayclip-git
+paru -S wayclip-manager-git
+yay -S wayclip-manager-git
 
 wayclip install // installs systemd file
 ```

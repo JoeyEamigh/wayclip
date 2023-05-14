@@ -9,7 +9,6 @@ repository = "https://github.com/JoeyEamigh/wayclip.git"
 documentation = "https://github.com/JoeyEamigh/wayclip"
 homepage = "https://github.com/JoeyEamigh/wayclip"
 keywords = ["wayland", "clipboard", "manager"]
-categories = ["wayland", "clipboard-manager"]
 readme = "README.md"
 license = "MIT"
 

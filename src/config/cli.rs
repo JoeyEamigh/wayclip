@@ -13,6 +13,8 @@ pub enum Commands {
   Start,
   /// activates the clipboard menu dropdown (for use in a keybinding)
   Toggle,
+  /// dumps the clipboard contents to stdout
+  Dump,
   /// install
   Install,
 }

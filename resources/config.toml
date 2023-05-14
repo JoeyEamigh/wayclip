@@ -1,10 +1,11 @@
 [general]
 maxHistory = 0 # maximum number of history entries to keep (set to 0 to disable)
 menu = 'bemenu' # only bemenu is supported at the moment
+allowImages = false # whether to allow images to be copied to the clipboard (can be slow)
 
 [data]
-mime = 'text/plain' # preferred mime type to use when copying text (change at your own risk) ((utf8 is expensive??))
-dedupe = true # whether to deduplicate history entries (maybe expensive?)
+mime = 'text/plain' # preferred mime type to use when copying text
+dedupe = true # whether to deduplicate history entries
 
 [encryption]
 encrypt = true # whether to encrypt the history file

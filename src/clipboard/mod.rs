@@ -107,15 +107,32 @@ impl Clipboard {
       }
     }
 
+    if self.config.data.dedupe {
+      #[cfg(debug_assertions)]
+      let timer = std::time::Instant::now();
+
+      let idx = self
+        .hist
+        .iter()
+        .position(|item| match (item.clone().data, data.clone().data) {
+          (ItemData::Text(text), ItemData::Text(new_text)) if text.text == new_text.text => true,
+          (ItemData::Image(image), ItemData::Image(new_image)) if image.image == new_image.image => true,
+          _ => false,
+        });
+
+      if let Some(idx) = idx {
+        debug!("found duplicate clipboard item - removing");
+        self.hist.remove(idx);
+      }
+
+      #[cfg(debug_assertions)]
+      trace!("(copy function) deduped clipboard in {:?}", timer.elapsed());
+    }
+
     self.hist.push(data);
     if self.hist.len() > self.config.general.max_history && self.config.general.max_history > 0 {
       self.hist.remove(0);
     }
-
-    #[cfg(debug_assertions)]
-    if let Some(live) = &mut self.live {
-      trace!("wayland data in: {:?}", live.instant.elapsed())
-    };
 
     self.live = None;
     self.save();
@@ -127,6 +144,21 @@ impl Clipboard {
 
   pub fn get_config(&self) -> Config {
     self.config.clone()
+  }
+
+  pub fn dump(&self) {
+    println!("{:#?}", self.hist);
+  }
+
+  /// handle a clipboard paste event by moving the selected index to the end
+  pub fn pasted_idx(&mut self, idx: usize) {
+    if idx >= self.hist.len() {
+      return;
+    }
+
+    let item = self.hist.remove(idx);
+    self.hist.push(item);
+    self.save();
   }
 
   fn save(&self) {
@@ -148,8 +180,40 @@ impl Clipboard {
 
     let existing = self.helper.retrieve_clipboard();
 
-    if let Some(existing) = existing {
-      self.hist = existing;
+    if let Some(mut existing) = existing {
+      if !self.config.general.allow_images {
+        #[cfg(debug_assertions)]
+        let timer = std::time::Instant::now();
+
+        existing.retain(|item| match item.data.clone() {
+          ItemData::Text(_) => true,
+          ItemData::Image(_) => false,
+        });
+
+        #[cfg(debug_assertions)]
+        trace!("(restore function) image removal took {:?}", timer.elapsed());
+      }
+
+      if !self.config.data.dedupe {
+        self.hist = existing;
+      } else {
+        use itertools::Itertools;
+
+        #[cfg(debug_assertions)]
+        let timer = std::time::Instant::now();
+
+        self.hist = existing
+          .into_iter()
+          .unique_by(|item| match item.data.clone() {
+            ItemData::Text(text) => text.text,
+            // no good way to dedupe images with unique_by bc of clones - hashing maybe but that's a lot of work
+            ItemData::Image(_) => item.id.clone(),
+          })
+          .collect();
+
+        #[cfg(debug_assertions)]
+        trace!("(restore function) dedupe took {:?}", timer.elapsed());
+      }
     }
 
     debug!("restored {:?} clipboard items", self.hist.len());

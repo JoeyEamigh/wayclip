@@ -1,6 +1,6 @@
 use std::{io::Read, os::unix::io::AsRawFd};
 
-use tracing::{debug, info, trace};
+use tracing::{debug, trace};
 use wayland_client::{
   event_created_child,
   protocol::{
@@ -18,7 +18,7 @@ use wayland_protocols_wlr::data_control::v1::client::{
 
 use crate::{
   clipboard::{self, WrappedClipboard},
-  input,
+  communication, input,
 };
 
 #[derive(Clone, Debug)]
@@ -142,6 +142,10 @@ fn get_item(conn: &Connection, state: &mut WaylandState) -> Option<clipboard::It
   if let Some(mime_type) = live.mime_types.iter().find(|mime_type| mime_type.starts_with("image/")) {
     debug!("image mime type found: {:?}", mime_type);
 
+    if !state.clipboard.read().unwrap().get_config().general.allow_images {
+      return None;
+    }
+
     let (mut read, write) = os_pipe::pipe().expect("fuck shit");
     offer.receive((*mime_type).clone(), write.as_raw_fd());
     drop(write);
@@ -151,7 +155,10 @@ fn get_item(conn: &Connection, state: &mut WaylandState) -> Option<clipboard::It
     let mut buffer = vec![];
     read.read_to_end(&mut buffer).unwrap();
 
-    trace!("buffer size: {:?}", buffer.len());
+    debug!("image buffer size: {:?} bytes", buffer.len());
+
+    #[cfg(debug_assertions)]
+    trace!("wayland data transferred in: {:?}", live.instant.elapsed());
 
     if let Some(file_type) = infer::get(&buffer) {
       debug!("file type: {:?} confirmed", file_type);
@@ -178,7 +185,10 @@ fn get_item(conn: &Connection, state: &mut WaylandState) -> Option<clipboard::It
   let mut text = String::new();
   read.read_to_string(&mut text).unwrap();
 
-  debug!("text: {:?}", text);
+  debug!("text buffer size: {:?} bytes", text.clone().as_bytes().len());
+
+  #[cfg(debug_assertions)]
+  trace!("wayland data transferred in: {:?}", live.instant.elapsed());
 
   if text.trim().is_empty() {
     return None;
@@ -209,7 +219,7 @@ impl Dispatch<ZwlrDataControlOfferV1, ()> for WaylandState {
     let live = if let Some(live) = &mut borrow.live {
       live
     } else {
-      info!("no in progress");
+      debug!("no in progress");
       return;
     };
 
@@ -251,14 +261,19 @@ impl WaylandState {
   }
 }
 
-pub fn watch_clipboard(clipboard: WrappedClipboard, menu_message_receiver: std::sync::mpsc::Receiver<String>) {
-  let (mut state, mut queue) = WaylandState::new(clipboard);
+pub fn watch_clipboard(
+  clipboard: WrappedClipboard,
+  menu_message_receiver: std::sync::mpsc::Receiver<communication::MPSCMessage>,
+) {
+  let (mut state, mut queue) = WaylandState::new(clipboard.clone());
   let mut dev = input::UDevice::new();
 
   std::thread::spawn(move || loop {
-    let message = menu_message_receiver.recv().unwrap();
+    let (message, index) = menu_message_receiver.recv().unwrap();
     dev.copy(message);
     dev.paste();
+
+    clipboard.write().unwrap().pasted_idx(index);
   });
 
   loop {

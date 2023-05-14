@@ -11,7 +11,6 @@ mod input;
 mod menu;
 mod wayland;
 
-// #[tokio::main]
 fn main() {
   let helper = config::init_helper();
   let _guard = init_logger(helper.log_dir.clone());
@@ -21,6 +20,7 @@ fn main() {
   match &cli.command {
     Some(config::cli::Commands::Toggle) => toggle(),
     Some(config::cli::Commands::Install) => config::install::install(helper),
+    Some(config::cli::Commands::Dump) => dump(helper),
     _ => run(helper),
   }
 }
@@ -29,7 +29,7 @@ fn run(helper: config::file::FileHelper) {
   let (config, helper) = config::init(helper);
 
   // bemenu -> wayland
-  let (tx, rx) = std::sync::mpsc::channel::<String>();
+  let (tx, rx) = std::sync::mpsc::channel::<communication::MPSCMessage>();
 
   let clipboard = clipboard::Clipboard::init(config, helper);
   let t_clipboard = clipboard.clone();
@@ -43,6 +43,13 @@ fn run(helper: config::file::FileHelper) {
 
 fn toggle() {
   communication::SocketHandler::client().toggle();
+}
+
+fn dump(helper: config::file::FileHelper) {
+  let (config, helper) = config::init(helper);
+
+  let clipboard = clipboard::Clipboard::init(config, helper);
+  clipboard.read().unwrap().dump();
 }
 
 // dev logger

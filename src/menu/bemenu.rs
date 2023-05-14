@@ -31,7 +31,7 @@ impl Menu for BeMenu {
     }))
   }
 
-  fn show(&mut self) -> Result<Option<String>, Error> {
+  fn show(&mut self) -> Result<Option<(String, usize)>, Error> {
     let menu = self.menu;
     self.handle_config(menu);
     self.add_items(menu);
@@ -54,9 +54,10 @@ impl Menu for BeMenu {
 
       if status == bm_run_result_BM_RUN_RESULT_SELECTED {
         let selected = *bm_menu_get_selected_items(menu, std::ptr::null_mut());
+        let selected_idx = bm_item_get_userdata(selected) as *mut i32;
         let text = std::ffi::CStr::from_ptr(bm_item_get_text(selected)).to_str().unwrap();
 
-        return Ok(Some(text.to_string()));
+        return Ok(Some((text.to_string(), *Box::from_raw(selected_idx) as usize)));
       } else if status == bm_run_result_BM_RUN_RESULT_CANCEL {
         return Ok(None);
       }
@@ -83,10 +84,10 @@ impl BeMenu {
   }
 
   fn add_items(&mut self, menu: *mut bm_menu) {
-    for item in (self.clipboard.read().unwrap().hist).iter().rev() {
+    for (idx, item) in (self.clipboard.read().unwrap().hist).iter().rev().enumerate() {
       match &item.data {
         clipboard::ItemData::Text(data) => unsafe {
-          let item = self.create_text_item(data);
+          let item = self.create_text_item(data, idx);
           bm_menu_add_item(menu, item);
           self.items.push(item);
         },
@@ -95,9 +96,13 @@ impl BeMenu {
     }
   }
 
-  fn create_text_item(&self, item: &clipboard::TextItem) -> *mut bm_item {
+  fn create_text_item(&self, item: &clipboard::TextItem, idx: usize) -> *mut bm_item {
     let item = CString::new(item.text.clone()).unwrap();
-    unsafe { bm_item_new(std::ffi::CStr::as_ptr(&item)) }
+    unsafe {
+      let item = bm_item_new(std::ffi::CStr::as_ptr(&item));
+      bm_item_set_userdata(item, Box::into_raw(Box::new(idx)) as *mut _);
+      item
+    }
   }
 }
 

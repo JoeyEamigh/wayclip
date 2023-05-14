@@ -6,6 +6,7 @@ pub const SYSTEMD_FILE: &str = "wayclip.service";
 // [general]
 pub const MAX_HISTORY: usize = 0;
 pub const MENU: &str = "bemenu";
+pub const ALLOW_IMAGES: bool = true;
 
 // [data]
 pub const MIME: &str = "text/plain";

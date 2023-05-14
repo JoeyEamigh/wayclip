@@ -52,6 +52,8 @@ pub struct General {
   pub max_history: usize,
   #[serde(default)]
   pub menu: String,
+  #[serde(default)]
+  pub allow_images: bool,
 }
 
 impl Default for General {
@@ -59,6 +61,7 @@ impl Default for General {
     General {
       max_history: MAX_HISTORY,
       menu: MENU.to_string(),
+      allow_images: ALLOW_IMAGES,
     }
   }
 }

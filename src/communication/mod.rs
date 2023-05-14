@@ -1,6 +1,6 @@
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream, NameTypeSupport};
 use std::io::{self, prelude::*, BufReader};
-use tracing::{info, warn};
+use tracing::{debug, warn};
 
 use crate::{clipboard, menu};
 
@@ -14,16 +14,21 @@ pub enum SocketType {
   Client(LocalSocketStream),
 }
 
+pub type MPSCMessage = (String, usize);
+
 impl SocketHandler {
   pub fn server() -> Self {
     let name = get_socket_name();
 
     let socket = match LocalSocketListener::bind(name) {
-      Err(e) if e.kind() == io::ErrorKind::AddrInUse => panic!("Socket file occupied"),
+      Err(e) if e.kind() == io::ErrorKind::AddrInUse => {
+        eprintln!("socket already in use, please check that wayclip is not already running");
+        std::process::exit(1);
+      }
       x => x.unwrap(),
     };
 
-    info!("server socket opened at {}", name);
+    debug!("server socket opened at {}", name);
 
     Self {
       buffer: String::with_capacity(128),
@@ -35,11 +40,14 @@ impl SocketHandler {
     let name = get_socket_name();
 
     let socket = match LocalSocketStream::connect(name) {
-      Err(e) if e.kind() == io::ErrorKind::NotFound => panic!("Socket file not found"),
+      Err(e) if e.kind() == io::ErrorKind::NotFound => {
+        eprintln!("wayclip server is not running, please start it first");
+        std::process::exit(1);
+      }
       x => x.unwrap(),
     };
 
-    info!("client socket opened at {}", name);
+    debug!("client socket opened at {}", name);
 
     Self {
       buffer: String::with_capacity(128),
@@ -50,14 +58,14 @@ impl SocketHandler {
   pub fn listen(
     &mut self,
     clipboard: clipboard::WrappedClipboard,
-    menu_message_sender: std::sync::mpsc::Sender<String>,
+    menu_message_sender: std::sync::mpsc::Sender<MPSCMessage>,
   ) {
     match &mut self.socket {
       SocketType::Server(listener) => {
         for conn in listener.incoming().filter_map(handle_error) {
           let mut conn = BufReader::new(conn);
           conn.read_line(&mut self.buffer).unwrap();
-          info!("toggle from pid: {}", self.buffer);
+          debug!("server got toggle from client pid: {}", self.buffer);
 
           let clipboard = clipboard.clone();
           let menu_message_sender = menu_message_sender.clone();
@@ -65,14 +73,14 @@ impl SocketHandler {
             let mut menu = menu::init(clipboard).expect("failed to initialize a menu backend");
             let result = menu.show();
 
-            let text = match result {
-              Ok(Some(text)) => text,
+            let data = match result {
+              Ok(Some(data)) => data,
               Ok(None) => return,
               Err(_) => return,
             };
 
-            info!("selected: {:?}", text);
-            menu_message_sender.send(text).unwrap();
+            debug!("selected: \"{:?}\" from menu", data.0);
+            menu_message_sender.send(data).unwrap();
           });
 
           self.buffer.clear();
@@ -86,7 +94,7 @@ impl SocketHandler {
     match &mut self.socket {
       SocketType::Client(conn) => {
         let pid = std::process::id();
-        info!("my pid is {} and i am going to message the listener", pid);
+        debug!("my (client) pid is {} and i am going to message the server", pid);
 
         conn.write_all(format!("{}", pid).as_bytes()).unwrap();
       }

@@ -40,7 +40,7 @@ cargo build --release
 wayclip install // installs systemd file
 ```
 
-### Arch Linux AUR (coming soon)
+### Arch Linux AUR
 
 ```bash
 paru -S wayclip-git
@@ -49,7 +49,7 @@ yay -S wayclip-git
 wayclip install // installs systemd file
 ```
 
-### Cargo (coming soon)
+### Cargo
 
 ```bash
 cargo install wayclip
@@ -69,7 +69,7 @@ since wayland has no working hotkeys system, you should use your compositor's ho
 
 ## TODO (not sure how much of this i will actually do)
 
-- [ ] add an actual dedupe
+- [x] add an actual dedupe
 - [ ] add support for multiple text mime-types at a time
 - [ ] add support for images
 - [ ] add support for files

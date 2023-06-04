@@ -270,7 +270,7 @@ pub fn watch_clipboard(
 
   std::thread::spawn(move || loop {
     let (message, index) = menu_message_receiver.recv().unwrap();
-    dev.copy(message);
+    dev.copy(message, clipboard.read().unwrap().get_config().data.mime.clone());
     dev.paste();
 
     clipboard.write().unwrap().pasted_idx(index);

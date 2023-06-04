@@ -33,12 +33,12 @@ impl UDevice {
     self.device.emit(&[up_event]).unwrap();
   }
 
-  pub fn copy(&self, text: String) {
+  pub fn copy(&self, text: String, mime: String) {
     let opts = wl_clipboard_rs::copy::Options::new();
     opts
       .copy(
         wl_clipboard_rs::copy::Source::Bytes(text.into_bytes().into()),
-        wl_clipboard_rs::copy::MimeType::Autodetect,
+        wl_clipboard_rs::copy::MimeType::Specific(mime),
       )
       .unwrap();
   }

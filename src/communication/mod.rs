@@ -79,7 +79,7 @@ impl SocketHandler {
               Err(_) => return,
             };
 
-            debug!("selected: \"{:?}\" from menu", data.0);
+            debug!("selected: \"{:?}\" from menu of index \"{:?}\"", data.0, data.1);
             menu_message_sender.send(data).unwrap();
           });
 

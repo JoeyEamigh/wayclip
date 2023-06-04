@@ -156,7 +156,8 @@ impl Clipboard {
       return;
     }
 
-    let item = self.hist.remove(idx);
+    // remove the item from history reversed
+    let item = self.hist.remove(self.hist.len() - idx - 1);
     self.hist.push(item);
     self.save();
   }

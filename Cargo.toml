@@ -1,9 +1,9 @@
 [package]
 name = "wayclip"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Joey Eamigh"]
 edition = "2021"
-rust-version = "1.71"
+rust-version = "1.72"
 description = "An opinionated Wayland clipboard manager"
 repository = "https://github.com/JoeyEamigh/wayclip.git"
 documentation = "https://github.com/JoeyEamigh/wayclip"

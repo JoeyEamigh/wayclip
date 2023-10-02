@@ -14,7 +14,7 @@ pub struct BeMenu {
   clipboard: clipboard::WrappedClipboard,
 
   menu: *mut bm_menu,
-  items: Vec<*mut bm_item>,
+  items: Vec<(*mut bm_item, *mut usize)>,
 }
 
 impl Menu for BeMenu {
@@ -87,21 +87,24 @@ impl BeMenu {
     for (idx, item) in (self.clipboard.read().unwrap().hist).iter().rev().enumerate() {
       match &item.data {
         clipboard::ItemData::Text(data) => unsafe {
-          let item = self.create_text_item(data, idx);
+          let (item, idx) = self.create_text_item(data, idx);
           bm_menu_add_item(menu, item);
-          self.items.push(item);
+          self.items.push((item, idx));
         },
         clipboard::ItemData::Image(_) => {}
       }
     }
   }
 
-  fn create_text_item(&self, item: &clipboard::TextItem, idx: usize) -> *mut bm_item {
+  fn create_text_item(&self, item: &clipboard::TextItem, idx: usize) -> (*mut bm_item, *mut usize) {
     let item = CString::new(item.text.clone()).unwrap();
     unsafe {
       let item = bm_item_new(std::ffi::CStr::as_ptr(&item));
-      bm_item_set_userdata(item, Box::into_raw(Box::new(idx)) as *mut _);
-      item
+      let idx = Box::into_raw(Box::new(idx));
+
+      bm_item_set_userdata(item, idx as *mut _);
+
+      (item, idx)
     }
   }
 }
@@ -109,10 +112,11 @@ impl BeMenu {
 impl Drop for BeMenu {
   fn drop(&mut self) {
     unsafe {
-      // for item in self.items.iter() {
-      //   bm_item_free(*item);
-      // }
       bm_menu_free(self.menu);
+
+      for (_, idx) in self.items.iter() {
+        drop(Box::from_raw(*idx));
+      }
     }
   }
 }

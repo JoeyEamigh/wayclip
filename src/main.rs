@@ -1,6 +1,5 @@
 #![feature(let_chains)]
 #![feature(if_let_guard)]
-#![feature(drain_filter)]
 
 use clap::Parser;
 

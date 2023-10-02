@@ -1,4 +1,7 @@
-use std::{io::Read, os::unix::io::AsRawFd};
+use std::{
+  io::Read,
+  os::{fd::BorrowedFd, unix::io::AsRawFd},
+};
 
 use tracing::{debug, trace};
 use wayland_client::{
@@ -129,7 +132,7 @@ impl Dispatch<ZwlrDataControlDeviceV1, ()> for WaylandState {
   );
 }
 
-fn get_item(conn: &Connection, state: &mut WaylandState) -> Option<clipboard::Item> {
+fn get_item(conn: &Connection, state: &WaylandState) -> Option<clipboard::Item> {
   let borrow = state.clipboard.read().unwrap();
   let live = if let Some(live) = &borrow.live {
     live
@@ -147,7 +150,9 @@ fn get_item(conn: &Connection, state: &mut WaylandState) -> Option<clipboard::It
     }
 
     let (mut read, write) = os_pipe::pipe().expect("fuck shit");
-    offer.receive((*mime_type).clone(), write.as_raw_fd());
+    offer.receive((*mime_type).clone(), unsafe {
+      BorrowedFd::borrow_raw(write.as_raw_fd())
+    });
     drop(write);
 
     conn.roundtrip().unwrap();
@@ -177,7 +182,9 @@ fn get_item(conn: &Connection, state: &mut WaylandState) -> Option<clipboard::It
   let preferred_text_mime = state.clipboard.read().unwrap().preferred_text_mime();
   let (mut read, write) = os_pipe::pipe().expect("fuck shit");
 
-  offer.receive(preferred_text_mime.clone(), write.as_raw_fd());
+  offer.receive(preferred_text_mime.clone(), unsafe {
+    BorrowedFd::borrow_raw(write.as_raw_fd())
+  });
   drop(write);
 
   conn.roundtrip().unwrap();

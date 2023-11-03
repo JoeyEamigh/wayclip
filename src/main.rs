@@ -20,6 +20,7 @@ fn main() {
     Some(config::cli::Commands::Toggle) => toggle(),
     Some(config::cli::Commands::Install) => config::install::install(helper),
     Some(config::cli::Commands::Dump) => dump(helper),
+    Some(config::cli::Commands::Clear) => clear(helper),
     _ => run(helper),
   }
 }
@@ -49,6 +50,13 @@ fn dump(helper: config::file::FileHelper) {
 
   let clipboard = clipboard::Clipboard::init(config, helper);
   clipboard.read().unwrap().dump();
+}
+
+fn clear(helper: config::file::FileHelper) {
+  let (config, helper) = config::init(helper);
+
+  let clipboard = clipboard::Clipboard::init(config, helper);
+  clipboard.write().unwrap().clear();
 }
 
 // dev logger

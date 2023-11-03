@@ -15,6 +15,8 @@ pub enum Commands {
   Toggle,
   /// dumps the clipboard contents to stdout
   Dump,
+  /// empties the clipboard
+  Clear,
   /// install
   Install,
 }

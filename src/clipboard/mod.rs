@@ -150,6 +150,11 @@ impl Clipboard {
     println!("{:#?}", self.hist);
   }
 
+  pub fn clear(&mut self) {
+    self.hist.clear();
+    self.save()
+  }
+
   /// handle a clipboard paste event by moving the selected index to the end
   pub fn pasted_idx(&mut self, idx: usize) {
     if idx >= self.hist.len() {

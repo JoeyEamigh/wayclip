@@ -59,19 +59,48 @@ fn clear(helper: config::file::FileHelper) {
   clipboard.write().unwrap().clear();
 }
 
-// dev logger
-#[cfg(debug_assertions)]
-fn init_logger(_log_dir: std::path::PathBuf) -> &'static str {
-  tracing_subscriber::fmt().with_max_level(tracing::Level::TRACE).init();
-
-  "guard"
-}
-
-// "prod" logger
-#[cfg(not(debug_assertions))]
 fn init_logger(log_dir: std::path::PathBuf) -> tracing_appender::non_blocking::WorkerGuard {
+  use tracing::metadata::LevelFilter;
+  use tracing_subscriber::{
+    filter::Directive, fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
+  };
+
+  #[cfg(debug_assertions)]
+  let file_appender = tracing_appender::rolling::daily(log_dir, "wayclip-debug.log");
+  #[cfg(not(debug_assertions))]
   let file_appender = tracing_appender::rolling::daily(log_dir, "wayclip.log");
+
   let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
-  tracing_subscriber::fmt().with_writer(non_blocking).init();
+
+  // directives for debug builds
+  #[cfg(debug_assertions)]
+  let default_directive = Directive::from(LevelFilter::TRACE);
+
+  #[cfg(debug_assertions)]
+  let filter_directives = if let Ok(filter) = std::env::var("RUST_LOG") {
+    filter
+  } else {
+    "wayclip=trace".to_string()
+  };
+
+  // directives for release builds
+  #[cfg(not(debug_assertions))]
+  let default_directive = Directive::from(LevelFilter::INFO);
+
+  #[cfg(not(debug_assertions))]
+  let filter_directives = if let Ok(filter) = std::env::var("RUST_LOG") {
+    filter
+  } else {
+    "wayclip=info".to_string()
+  };
+
+  let filter = EnvFilter::builder()
+    .with_default_directive(default_directive)
+    .parse_lossy(filter_directives);
+
+  tracing_subscriber::registry()
+    .with(fmt::layer().with_writer(non_blocking).with_filter(filter))
+    .init();
+
   guard
 }

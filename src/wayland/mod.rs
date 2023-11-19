@@ -162,7 +162,6 @@ fn get_item(conn: &Connection, state: &WaylandState) -> Option<clipboard::Item> 
 
     debug!("image buffer size: {:?} bytes", buffer.len());
 
-    #[cfg(debug_assertions)]
     trace!("wayland data transferred in: {:?}", live.instant.elapsed());
 
     if let Some(file_type) = infer::get(&buffer) {
@@ -194,7 +193,6 @@ fn get_item(conn: &Connection, state: &WaylandState) -> Option<clipboard::Item> 
 
   debug!("text buffer size: {:?} bytes", text.clone().as_bytes().len());
 
-  #[cfg(debug_assertions)]
   trace!("wayland data transferred in: {:?}", live.instant.elapsed());
 
   if text.trim().is_empty() {

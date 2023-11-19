@@ -2,11 +2,8 @@ use std::sync::{Arc, RwLock};
 
 use crate::config::{data::Config, file::FileHelper};
 use serde::{Deserialize, Serialize};
-use tracing::debug;
+use tracing::{debug, trace};
 use wayland_client::backend::ObjectId;
-
-#[cfg(debug_assertions)]
-use tracing::trace;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct TextItem {
@@ -108,7 +105,6 @@ impl Clipboard {
     }
 
     if self.config.data.dedupe {
-      #[cfg(debug_assertions)]
       let timer = std::time::Instant::now();
 
       let idx = self
@@ -125,7 +121,6 @@ impl Clipboard {
         self.hist.remove(idx);
       }
 
-      #[cfg(debug_assertions)]
       trace!("(copy function) deduped clipboard in {:?}", timer.elapsed());
     }
 
@@ -168,7 +163,6 @@ impl Clipboard {
   }
 
   fn save(&self) {
-    #[cfg(debug_assertions)]
     let timer = std::time::Instant::now();
 
     let savable = self.hist.clone();
@@ -176,19 +170,16 @@ impl Clipboard {
     debug!("persisting {:?} clipboard items", savable.len());
     self.helper.persist_clipboard(savable);
 
-    #[cfg(debug_assertions)]
     trace!("persisted clipboard in {:?}", timer.elapsed());
   }
 
   fn restore(&mut self) {
-    #[cfg(debug_assertions)]
     let timer = std::time::Instant::now();
 
     let existing = self.helper.retrieve_clipboard();
 
     if let Some(mut existing) = existing {
       if !self.config.general.allow_images {
-        #[cfg(debug_assertions)]
         let timer = std::time::Instant::now();
 
         existing.retain(|item| match item.data.clone() {
@@ -196,7 +187,6 @@ impl Clipboard {
           ItemData::Image(_) => false,
         });
 
-        #[cfg(debug_assertions)]
         trace!("(restore function) image removal took {:?}", timer.elapsed());
       }
 
@@ -205,7 +195,6 @@ impl Clipboard {
       } else {
         use itertools::Itertools;
 
-        #[cfg(debug_assertions)]
         let timer = std::time::Instant::now();
 
         self.hist = existing
@@ -217,14 +206,12 @@ impl Clipboard {
           })
           .collect();
 
-        #[cfg(debug_assertions)]
         trace!("(restore function) dedupe took {:?}", timer.elapsed());
       }
     }
 
     debug!("restored {:?} clipboard items", self.hist.len());
 
-    #[cfg(debug_assertions)]
     trace!("restored clipboard in {:?}", timer.elapsed());
   }
 }

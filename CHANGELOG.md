@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.4.1] - 2023-11-19
 
-Fixing a double free in the drop for BeMenu.
+Fixing a double free in the drop for BeMenu and minorly reworking logging.
 
 ## [0.4.0] - 2023-11-3
 

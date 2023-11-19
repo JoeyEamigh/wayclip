@@ -113,10 +113,6 @@ impl Drop for BeMenu {
   fn drop(&mut self) {
     unsafe {
       bm_menu_free(self.menu);
-
-      for (_, idx) in self.items.iter() {
-        drop(Box::from_raw(*idx));
-      }
     }
   }
 }

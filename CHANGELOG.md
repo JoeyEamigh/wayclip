@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2023-11-19
+
+Fixing a double free in the drop for BeMenu.
+
 ## [0.4.0] - 2023-11-3
 
 This release merges PR #2 from @Vilhelm-Ian, which adds the ability to clear the clipboard.

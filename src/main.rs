@@ -1,4 +1,3 @@
-#![feature(let_chains)]
 #![feature(if_let_guard)]
 
 use clap::Parser;
@@ -99,6 +98,7 @@ fn init_logger(log_dir: std::path::PathBuf) -> tracing_appender::non_blocking::W
     .parse_lossy(filter_directives);
 
   tracing_subscriber::registry()
+    .with(fmt::layer())
     .with(fmt::layer().with_writer(non_blocking).with_filter(filter))
     .init();
 

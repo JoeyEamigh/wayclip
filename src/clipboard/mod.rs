@@ -32,8 +32,7 @@ pub struct Item {
 #[derive(Clone, Debug)]
 pub struct LiveClipboard {
   pub id: ObjectId,
-  pub offer:
-    Option<wayland_protocols_wlr::data_control::v1::client::zwlr_data_control_offer_v1::ZwlrDataControlOfferV1>,
+  pub offer: Option<wayland_protocols::ext::data_control::v1::client::ext_data_control_offer_v1::ExtDataControlOfferV1>,
   pub mime_types: Vec<String>,
   pub data: Vec<u8>,
   pub instant: std::time::Instant,
@@ -52,7 +51,7 @@ impl LiveClipboard {
 
   pub fn handle_offer(
     &mut self,
-    offer: &wayland_protocols_wlr::data_control::v1::client::zwlr_data_control_offer_v1::ZwlrDataControlOfferV1,
+    offer: &wayland_protocols::ext::data_control::v1::client::ext_data_control_offer_v1::ExtDataControlOfferV1,
     mime_type: String,
   ) {
     self.mime_types.push(mime_type);

@@ -33,10 +33,7 @@ impl Config {
     let figment = Figment::new().join(Toml::file(path.clone()));
     let config = figment.extract::<Config>();
 
-    let mut config = match config {
-      Ok(config) => config,
-      Err(_) => Config::default(),
-    };
+    let mut config = config.unwrap_or_default();
     config.figment = figment;
     config.helper = helper;
     config.path = path;

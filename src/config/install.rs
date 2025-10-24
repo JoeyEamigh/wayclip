@@ -21,6 +21,8 @@ pub fn install(helper: FileHelper) {
       .arg(SYSTEMD_FILE)
       .arg("--now")
       .spawn()
+      .unwrap()
+      .wait()
       .unwrap();
     println!("\nEnabling and starting {}", SYSTEMD_FILE);
   } else {

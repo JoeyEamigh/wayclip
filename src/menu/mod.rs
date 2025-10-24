@@ -6,7 +6,7 @@ pub trait Menu {
   fn new(clipboard: clipboard::WrappedClipboard) -> Result<Box<Self>, Error>
   where
     Self: Sized;
-  fn show(&mut self) -> Result<Option<(String, usize)>, Error>;
+  fn show(&self) -> Result<Option<(String, usize)>, Error>;
 }
 
 pub type WrappedMenu = Box<dyn Menu>;

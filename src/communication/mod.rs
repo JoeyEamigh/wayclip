@@ -60,6 +60,8 @@ impl SocketHandler {
     clipboard: clipboard::WrappedClipboard,
     menu_message_sender: std::sync::mpsc::Sender<MPSCMessage>,
   ) {
+    let menu = menu::init(clipboard).expect("failed to initialize a menu backend");
+
     match &mut self.socket {
       SocketType::Server(listener) => {
         for conn in listener.incoming().filter_map(handle_error) {
@@ -67,21 +69,16 @@ impl SocketHandler {
           conn.read_line(&mut self.buffer).unwrap();
           debug!("server got toggle from client pid: {}", self.buffer);
 
-          let clipboard = clipboard.clone();
-          let menu_message_sender = menu_message_sender.clone();
-          std::thread::spawn(move || {
-            let mut menu = menu::init(clipboard).expect("failed to initialize a menu backend");
-            let result = menu.show();
+          let result = &menu.show();
 
-            let data = match result {
-              Ok(Some(data)) => data,
-              Ok(None) => return,
-              Err(_) => return,
-            };
+          let data = match result {
+            Ok(Some(data)) => data,
+            Ok(None) => continue,
+            Err(_) => continue,
+          };
 
-            debug!("selected: \"{:?}\" from menu of index \"{:?}\"", data.0, data.1);
-            menu_message_sender.send(data).unwrap();
-          });
+          debug!("selected: \"{:?}\" from menu of index \"{:?}\"", data.0, data.1);
+          menu_message_sender.send(data.clone()).unwrap();
 
           self.buffer.clear();
         }

@@ -5,6 +5,7 @@
 
 use crate::{clipboard, config::error::Error};
 use std::ffi::CString;
+use tracing::trace;
 
 use super::Menu;
 
@@ -14,7 +15,6 @@ pub struct BeMenu {
   clipboard: clipboard::WrappedClipboard,
 
   menu: *mut bm_menu,
-  items: Vec<(*mut bm_item, *mut usize)>,
 }
 
 impl Menu for BeMenu {
@@ -27,11 +27,10 @@ impl Menu for BeMenu {
       clipboard,
 
       menu: unsafe { bm_menu_new(std::ptr::null()) },
-      items: Vec::new(),
     }))
   }
 
-  fn show(&mut self) -> Result<Option<(String, usize)>, Error> {
+  fn show(&self) -> Result<Option<(String, usize)>, Error> {
     let menu = self.menu;
     self.handle_config(menu);
     self.add_items(menu);
@@ -83,17 +82,25 @@ impl BeMenu {
     }
   }
 
-  fn add_items(&mut self, menu: *mut bm_menu) {
+  fn add_items(&self, menu: *mut bm_menu) {
+    self.remove_items(menu);
+
+    trace!("adding items to menu");
     for (idx, item) in (self.clipboard.read().unwrap().hist).iter().rev().enumerate() {
       match &item.data {
         clipboard::ItemData::Text(data) => unsafe {
-          let (item, idx) = self.create_text_item(data, idx);
+          let (item, _) = self.create_text_item(data, idx);
           bm_menu_add_item(menu, item);
-          self.items.push((item, idx));
         },
         clipboard::ItemData::Image(_) => {}
       }
     }
+  }
+
+  fn remove_items(&self, menu: *mut bm_menu) {
+    trace!("removing items from menu");
+
+    unsafe { bm_menu_free_items(menu) }
   }
 
   fn create_text_item(&self, item: &clipboard::TextItem, idx: usize) -> (*mut bm_item, *mut usize) {

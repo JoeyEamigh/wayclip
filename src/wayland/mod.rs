@@ -13,10 +13,10 @@ use wayland_client::{
   Connection, Dispatch, EventQueue, Proxy, QueueHandle,
 };
 
-use wayland_protocols_wlr::data_control::v1::client::{
-  zwlr_data_control_device_v1::{self, ZwlrDataControlDeviceV1},
-  zwlr_data_control_manager_v1::ZwlrDataControlManagerV1,
-  zwlr_data_control_offer_v1::{self, ZwlrDataControlOfferV1},
+use wayland_protocols::ext::data_control::v1::client::{
+  ext_data_control_device_v1::{self, ExtDataControlDeviceV1},
+  ext_data_control_manager_v1::ExtDataControlManagerV1,
+  ext_data_control_offer_v1::ExtDataControlOfferV1,
 };
 
 use crate::{
@@ -29,8 +29,8 @@ struct WaylandState {
   clipboard: WrappedClipboard,
 
   seat: Option<WlSeat>,
-  manager: Option<ZwlrDataControlManagerV1>,
-  device: Option<ZwlrDataControlDeviceV1>,
+  manager: Option<ExtDataControlManagerV1>,
+  device: Option<ExtDataControlDeviceV1>,
 }
 
 impl Dispatch<wl_registry::WlRegistry, ()> for WaylandState {
@@ -53,8 +53,8 @@ impl Dispatch<wl_registry::WlRegistry, ()> for WaylandState {
         "wl_seat" => {
           registry.bind::<wl_seat::WlSeat, _, _>(name, 1, qh, ());
         }
-        "zwlr_data_control_manager_v1" => {
-          state.manager = Some(registry.bind::<ZwlrDataControlManagerV1, _, _>(name, 1, qh, ()));
+        "ext_data_control_manager_v1" => {
+          state.manager = Some(registry.bind::<ExtDataControlManagerV1, _, _>(name, 1, qh, ()));
         }
         _ => {}
       }
@@ -72,11 +72,11 @@ impl Dispatch<wl_seat::WlSeat, ()> for WaylandState {
   }
 }
 
-impl Dispatch<ZwlrDataControlManagerV1, ()> for WaylandState {
+impl Dispatch<ExtDataControlManagerV1, ()> for WaylandState {
   fn event(
     _: &mut Self,
-    _: &ZwlrDataControlManagerV1,
-    _: <ZwlrDataControlManagerV1 as Proxy>::Event,
+    _: &ExtDataControlManagerV1,
+    _: <ExtDataControlManagerV1 as Proxy>::Event,
     _: &(),
     _: &Connection,
     _: &QueueHandle<Self>,
@@ -84,11 +84,11 @@ impl Dispatch<ZwlrDataControlManagerV1, ()> for WaylandState {
   }
 }
 
-// impl Dispatch<ZwlrDataControlSourceV1, ()> for WaylandState {
+// impl Dispatch<ExtDataControlSourceV1, ()> for WaylandState {
 //   fn event(
 //     _: &mut Self,
-//     _: &ZwlrDataControlSourceV1,
-//     _: <ZwlrDataControlSourceV1 as Proxy>::Event,
+//     _: &ExtDataControlSourceV1,
+//     _: <ExtDataControlSourceV1 as Proxy>::Event,
 //     _: &(),
 //     _: &Connection,
 //     _: &QueueHandle<Self>,
@@ -97,23 +97,23 @@ impl Dispatch<ZwlrDataControlManagerV1, ()> for WaylandState {
 //   }
 // }
 
-impl Dispatch<ZwlrDataControlDeviceV1, ()> for WaylandState {
+impl Dispatch<ExtDataControlDeviceV1, ()> for WaylandState {
   fn event(
     state: &mut Self,
-    _: &ZwlrDataControlDeviceV1,
-    event: <ZwlrDataControlDeviceV1 as Proxy>::Event,
+    _: &ExtDataControlDeviceV1,
+    event: <ExtDataControlDeviceV1 as Proxy>::Event,
     _: &(),
     conn: &Connection,
     _: &QueueHandle<Self>,
   ) {
     match event {
-      zwlr_data_control_device_v1::Event::DataOffer { id } => {
+      ext_data_control_device_v1::Event::DataOffer { id } => {
         let id = id.id();
         trace!("data offer id: {:?}", id);
         state.clipboard.write().unwrap().new_offer(id);
       }
 
-      zwlr_data_control_device_v1::Event::Selection { id } if id.is_some() => {
+      ext_data_control_device_v1::Event::Selection { id } if id.is_some() => {
         let id = id.unwrap().id();
         trace!("selection id: {:?}", id);
         let item = get_item(conn, state);
@@ -127,8 +127,8 @@ impl Dispatch<ZwlrDataControlDeviceV1, ()> for WaylandState {
 
   event_created_child!(
     WaylandState,
-    ZwlrDataControlDeviceV1,
-    [zwlr_data_control_device_v1::EVT_DATA_OFFER_OPCODE => (ZwlrDataControlOfferV1, ())]
+    ExtDataControlDeviceV1,
+    [ext_data_control_device_v1::EVT_DATA_OFFER_OPCODE => (ExtDataControlOfferV1, ())]
   );
 }
 
@@ -191,7 +191,7 @@ fn get_item(conn: &Connection, state: &WaylandState) -> Option<clipboard::Item> 
   let mut text = String::new();
   read.read_to_string(&mut text).unwrap();
 
-  debug!("text buffer size: {:?} bytes", text.clone().as_bytes().len());
+  debug!("text buffer size: {:?} bytes", text.clone().len());
 
   trace!("wayland data transferred in: {:?}", live.instant.elapsed());
 
@@ -210,11 +210,11 @@ fn get_item(conn: &Connection, state: &WaylandState) -> Option<clipboard::Item> 
   Some(item)
 }
 
-impl Dispatch<ZwlrDataControlOfferV1, ()> for WaylandState {
+impl Dispatch<ExtDataControlOfferV1, ()> for WaylandState {
   fn event(
     state: &mut Self,
-    offer: &ZwlrDataControlOfferV1,
-    event: <ZwlrDataControlOfferV1 as Proxy>::Event,
+    offer: &ExtDataControlOfferV1,
+    event: <ExtDataControlOfferV1 as Proxy>::Event,
     _: &(),
     _: &Connection,
     _: &QueueHandle<Self>,
@@ -229,7 +229,9 @@ impl Dispatch<ZwlrDataControlOfferV1, ()> for WaylandState {
     };
 
     let mime_type = match event {
-      zwlr_data_control_offer_v1::Event::Offer { mime_type } => mime_type,
+      wayland_protocols::ext::data_control::v1::client::ext_data_control_offer_v1::Event::Offer { mime_type } => {
+        mime_type
+      }
       _ => return,
     };
 
@@ -258,6 +260,11 @@ impl WaylandState {
     // double roundtrip needed for seat to be set
     queue.roundtrip(&mut state).unwrap();
     queue.roundtrip(&mut state).unwrap();
+    queue.roundtrip(&mut state).unwrap();
+    queue.roundtrip(&mut state).unwrap();
+
+    trace!("wayland seat: {:?}", state.seat);
+    trace!("wayland manager: {:?}", state.manager);
 
     let seat = state.seat.clone().unwrap();
     state.device = Some(state.manager.as_ref().unwrap().get_data_device(&seat, &qh, ()));

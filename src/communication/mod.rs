@@ -1,6 +1,6 @@
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream, NameTypeSupport};
 use std::io::{self, prelude::*, BufReader};
-use tracing::{debug, warn};
+use tracing::{debug, trace, warn};
 
 use crate::{clipboard, menu};
 
@@ -69,7 +69,7 @@ impl SocketHandler {
           conn.read_line(&mut self.buffer).unwrap();
           debug!("server got toggle from client pid: {}", self.buffer);
 
-          let result = &menu.show();
+          let result = menu.show();
 
           let data = match result {
             Ok(Some(data)) => data,
@@ -77,10 +77,12 @@ impl SocketHandler {
             Err(_) => continue,
           };
 
-          debug!("selected: \"{:?}\" from menu of index \"{:?}\"", data.0, data.1);
-          menu_message_sender.send(data.clone()).unwrap();
+          debug!("selected: \"{:?}\" from menu of index \"{:?}\"", &data.0, &data.1);
+          menu_message_sender.send(data).unwrap();
+          trace!("message sent to clipboard handler");
 
           self.buffer.clear();
+          trace!("buffer cleared for next client");
         }
       }
       SocketType::Client(_) => panic!("Client cannot listen"),

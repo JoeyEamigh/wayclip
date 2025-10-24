@@ -1808,6 +1808,7 @@ dependencies = [
  "infer",
  "interprocess",
  "itertools",
+ "libc",
  "machine-uid",
  "os_pipe",
  "quote",

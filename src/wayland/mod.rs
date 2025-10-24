@@ -260,8 +260,6 @@ impl WaylandState {
     // double roundtrip needed for seat to be set
     queue.roundtrip(&mut state).unwrap();
     queue.roundtrip(&mut state).unwrap();
-    queue.roundtrip(&mut state).unwrap();
-    queue.roundtrip(&mut state).unwrap();
 
     trace!("wayland seat: {:?}", state.seat);
     trace!("wayland manager: {:?}", state.manager);
@@ -277,18 +275,28 @@ pub fn watch_clipboard(
   clipboard: WrappedClipboard,
   menu_message_receiver: std::sync::mpsc::Receiver<communication::MPSCMessage>,
 ) {
+  trace!("Initializing Wayland state and queue");
   let (mut state, mut queue) = WaylandState::new(clipboard.clone());
   let mut dev = input::UDevice::new();
 
+  trace!("Spawning menu message handling thread");
   std::thread::spawn(move || loop {
+    trace!("Waiting for menu message");
     let (message, index) = menu_message_receiver.recv().unwrap();
+    trace!("Received menu message: message={}, index={}", message, index);
     dev.copy(message, clipboard.read().unwrap().get_config().data.mime.clone());
+    trace!("Performed copy operation");
     dev.paste();
+    trace!("Performed paste operation");
 
     clipboard.write().unwrap().pasted_idx(index);
+    trace!("Updated clipboard pasted index");
   });
 
+  trace!("Starting main event loop");
   loop {
+    trace!("Blocking dispatch start");
     queue.blocking_dispatch(&mut state).unwrap();
+    trace!("Blocking dispatch completed");
   }
 }
